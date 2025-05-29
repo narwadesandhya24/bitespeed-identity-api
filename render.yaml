@@ -1,12 +1,11 @@
 services:
   - type: web
     name: bitespeed-api
-    runtime: node
+    env: node
     buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
       - key: DATABASE_URL
         value: postgresql://user:password@host:5432/dbname
       - key: PORT
-        value: 3000 
-
+        value: 3000
