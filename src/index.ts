@@ -6,12 +6,13 @@ const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-
+// Define expected structure for incoming /identify requests
 interface IdentifyRequestBody {
   email?: string;
   phoneNumber?: string;
 }
 
+// Define structure for our response to the client
 interface ContactResponse {
   primaryContactId: number;
   emails: string[];
@@ -19,10 +20,12 @@ interface ContactResponse {
   secondaryContactIds: number[];
 }
 
+// Basic root route just to verify the server is running
 app.get('/', (_req: Request, res: Response) => {
   res.send('Hello from Bitespeed Identity API!');
 });
 
+// Main endpoint that handles identity reconciliation
 app.post(
   '/identify',
   async (
@@ -31,6 +34,7 @@ app.post(
   ) => {
     const { email, phoneNumber } = req.body;
 
+    // If neither email nor phone is provided, we can't proceed
     if (!email && !phoneNumber) {
       return res.status(400).json({ error: 'Email or phoneNumber is required' });
     }
@@ -75,6 +79,8 @@ app.post(
         .filter(Boolean) as number[];
 
       const rootPrimaryId = Math.min(...allLinkedIds);
+
+       // Get details of the root primary contact
       primaryContact = await prisma.contact.findUnique({
         where: { id: rootPrimaryId }
       });
@@ -109,7 +115,7 @@ app.post(
         });
       }
 
-      // Step 6: Fetch updated list after possible new insert
+      // Step 6: Pull the full updated list of related contacts again
       const updatedContacts = await prisma.contact.findMany({
         where: {
           OR: [
@@ -118,7 +124,8 @@ app.post(
           ]
         }
       });
-
+      
+      // Remove duplicates and nulls to prepare final response data
       const emails = Array.from(
         new Set(updatedContacts.map(c => c.email).filter(Boolean))
       ) as string[];
@@ -143,7 +150,7 @@ app.post(
     }
   }
 );
-
+// start the server 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
